@@ -5,12 +5,19 @@ import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import ApolloClient from 'apollo-boost';
+import { ApolloProvider } from '@apollo/react-hooks';
 
-import LoggedInTabNavigator from './components/LoggedInTabNavigator';
-import LoggedOutNavigator from './components/LoggedOutNavigator';
+import LoggedInTabNavigator from './components/LoggedInTabNavigator/LoggedInTabNavigator';
+import LoggedOutNavigator from './components/LoggedOutNavigator/LoggedOutNavigator';
+import { appContainer } from './constants/Styles';
 import useLinking from './useLinking';
 
 const Stack = createStackNavigator();
+
+const apolloClient = new ApolloClient({
+  uri: 'http://localhost:8000/graphql',
+});
 
 function App({ skipLoadingScreen }) {
   const [isLoadingComplete, setLoadingComplete] = React.useState(false);
@@ -51,37 +58,28 @@ function App({ skipLoadingScreen }) {
 
   if (!isLoadingComplete && !skipLoadingScreen) {
     return null;
-  } else if (isLoggedIn) {
-    return (
-      <View style={styles.container}>
-        {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-        <NavigationContainer ref={containerRef} initialState={initialNavigationState}>
-          <Stack.Navigator>
-            <Stack.Screen name="Root" component={LoggedInTabNavigator} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </View>
-    )
   } else {
     return (
-      <View style={styles.container}>
-        {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-        <NavigationContainer ref={containerRef} initialState={initialNavigationState}>
-          <Stack.Navigator>
-            <Stack.Screen name="Root" component={LoggedOutNavigator} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </View>
+      <ApolloProvider client={apolloClient}>
+        <View style={styles.container}>
+          {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
+          <NavigationContainer ref={containerRef} initialState={initialNavigationState}>
+            { isLoggedIn ? (
+              <Stack.Navigator>
+                <Stack.Screen name="LoggedInStack" component={LoggedInTabNavigator} />
+              </Stack.Navigator>
+            ) : (
+              <Stack.Navigator>
+                <Stack.Screen name="LoggedOutStack" component={LoggedOutNavigator} />
+              </Stack.Navigator>
+            ) }
+          </NavigationContainer>
+        </View>
+      </ApolloProvider>
     );
   }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#162531',
-    paddingBottom: 15,
-  },
-});
+const styles = StyleSheet.create(appContainer);
 
 export default App;
